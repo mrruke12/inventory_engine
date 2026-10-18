@@ -12,3 +12,10 @@ type Order struct {
 	CreatedAt time.Time
 	UpdatedAt time.Time
 }
+
+func NewOrder() *Order {
+	return &Order{
+		ID:     uuid.NewV7(),
+		Status: StatusPendingPayment,
+	}
+}
