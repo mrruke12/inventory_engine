@@ -1,13 +1,18 @@
 package orderusecase
 
-import "github.com/mrruke12/inventory_engine/internal/application/ports"
+import (
+	"github.com/mrruke12/inventory_engine/internal/application/ports"
+	"github.com/mrruke12/inventory_engine/internal/domains/order"
+)
 
 type Service struct {
-	uow ports.UnitOfWork
+	uow       ports.UnitOfWork
+	orderRepo order.Repository
 }
 
-func NewService(uow ports.UnitOfWork) *Service {
+func NewService(uow ports.UnitOfWork, orderRepo order.Repository) *Service {
 	return &Service{
-		uow: uow,
+		uow:       uow,
+		orderRepo: orderRepo,
 	}
 }

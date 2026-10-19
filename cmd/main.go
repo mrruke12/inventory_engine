@@ -2,11 +2,8 @@ package main
 
 import (
 	"context"
-	"fmt"
-	"uuid"
 
 	"github.com/mrruke12/inventory_engine/internal/application/orderusecase"
-	"github.com/mrruke12/inventory_engine/internal/domains/order"
 	"github.com/mrruke12/inventory_engine/internal/infrastructure/config"
 	"github.com/mrruke12/inventory_engine/internal/infrastructure/postgres"
 )
@@ -43,18 +40,21 @@ func main() {
 	}
 
 	uow := postgres.NewUnitOfWork(pool, postgres.NewRepositoryProvider)
+	orderRepo := postgres.NewOrderRepository(pool)
 
-	s := orderusecase.NewService(uow)
+	s := orderusecase.NewService(uow, orderRepo)
 
-	id, err := s.CreateOrder(context.Background(), []order.OrderItem{
-		{ProductID: uuid.MustParse("01a15049-79f6-733f-9e4c-a620316a3dcc"), Quantity: 1},
-	})
+	// id, err := s.CreateOrder(context.Background(), []order.OrderItem{
+	// 	{ProductID: uuid.MustParse("01a15049-79f6-733f-9e4c-a620316a3dcc"), Quantity: 1},
+	// })
+
+	err = s.CleanOrders(context.Background())
 
 	if err != nil {
 		panic(err)
 	}
 
-	fmt.Println(id)
+	// fmt.Println(id)
 
 	pool.Close()
 }

@@ -53,3 +53,27 @@ func (r *OrderRepository) CreateAndReserveOrderItems(ctx context.Context, produc
 
 	return nil
 }
+
+func (r *OrderRepository) BatchMarkExpiredOrders(ctx context.Context, batchSize int) (int, error) {
+	sql := `
+		update orders o
+		set status = 'expired',
+			updated_at = now()
+		where ctid in (
+			select ctid from orders
+			where expires_at < now()
+				and status = 'pending_payment'
+			order by expires_at
+			limit $1
+			for update skip locked
+		)
+	`
+
+	tag, err := r.pool.Exec(ctx, sql, batchSize)
+
+	if err != nil {
+		return 0, err
+	}
+
+	return int(tag.RowsAffected()), nil
+}
