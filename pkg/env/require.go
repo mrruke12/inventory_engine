@@ -6,6 +6,7 @@ import (
 	"strconv"
 )
 
+// Lookups for a key in the environment, returns an error if the key is not present.
 func Require(key string) (string, error) {
 	v, exists := os.LookupEnv(key)
 
@@ -16,6 +17,7 @@ func Require(key string) (string, error) {
 	return v, nil
 }
 
+// Lookups for a key in the environment and casts it to int, returns an error if the key is not present.
 func RequireInt(key string) (int, error) {
 	v, err := Require(key)
 
@@ -32,6 +34,7 @@ func RequireInt(key string) (int, error) {
 	return i, nil
 }
 
+// Lookups for multiple keys in the environment, returns an error if any key is not present.
 func RequireKeys(keys []string) ([]string, error) {
 	result := make([]string, len(keys))
 

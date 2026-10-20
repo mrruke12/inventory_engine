@@ -7,12 +7,12 @@ import (
 )
 
 type DBConfig struct {
-	Host     string
-	Port     int
-	DBName   string
-	User     string
-	Password string
-	SSLMode  string
+	Host     string `env:"DB_HOST"`
+	Port     int    `env:"DB_PORT"`
+	DBName   string `env:"DB_NAME"`
+	User     string `env:"DB_USER"`
+	Password string `env:"DB_PASSWORD"`
+	SSLMode  string `env:"DB_SSL_MODE"`
 }
 
 func (c *DBConfig) ConnString() string {
@@ -28,30 +28,13 @@ func (c *DBConfig) ConnString() string {
 }
 
 func GetDBConfig() (*DBConfig, error) {
-	values, err := env.RequireKeys([]string{
-		"DB_HOST",
-		"DB_NAME",
-		"DB_USER",
-		"DB_PASSWORD",
-		"DB_SSL_MODE",
-	})
+	cfg := &DBConfig{}
+
+	err := env.UnmarshalStruct(cfg)
 
 	if err != nil {
 		return nil, err
 	}
 
-	port, err := env.RequireInt("DB_PORT")
-
-	if err != nil {
-		return nil, err
-	}
-
-	return &DBConfig{
-		Host:     values[0],
-		Port:     port,
-		DBName:   values[1],
-		User:     values[2],
-		Password: values[3],
-		SSLMode:  values[4],
-	}, nil
+	return cfg, nil
 }
