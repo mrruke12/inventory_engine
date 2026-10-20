@@ -5,9 +5,11 @@ import (
 	"reflect"
 )
 
-// Unmarshals values from environment into the given structure according to the tags of its fields (or field names if no tags are present).
+// Unmarshals values from environment into the given structure according
+// to the tags of its fields (or field names if no tags are present).
 //
-// Supports int, string data types; returns an error for others. The dest must be a pointer to a structure.
+// Supports int, string data types; returns an error for others.
+// The dest must be a pointer to a structure.
 //
 //	struct Config {
 //		Host string `env:"DB_HOST"`
