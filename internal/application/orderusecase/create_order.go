@@ -6,14 +6,11 @@ import (
 
 	"github.com/mrruke12/inventory_engine/internal/application/ports"
 	"github.com/mrruke12/inventory_engine/internal/domains/order"
-	"github.com/mrruke12/inventory_engine/pkg/aggr"
 )
 
 func (s *Service) CreateOrder(ctx context.Context, orderItems []order.OrderItem) (uuid.UUID, error) {
 	o := order.NewOrder()
 	items := order.ItemsFromOrderItems(o.ID, orderItems)
-	products := aggr.Map(items, func(v order.Item, i int) uuid.UUID { return v.ProductID })
-	deltas := aggr.Map(items, func(v order.Item, i int) int { return v.Quantity })
 
 	err := s.uow.Do(ctx, func(ctx context.Context, rp ports.RepositoryProvider) error {
 		orderRepo := rp.OrderRepository()
@@ -22,7 +19,7 @@ func (s *Service) CreateOrder(ctx context.Context, orderItems []order.OrderItem)
 			return err
 		}
 
-		return orderRepo.CreateAndReserveOrderItems(ctx, products, deltas)
+		return orderRepo.CreateAndReserveOrderItems(ctx, items)
 	})
 
 	if err != nil {

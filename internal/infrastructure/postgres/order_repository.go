@@ -29,25 +29,54 @@ func (r *OrderRepository) CreateOrder(ctx context.Context, order *order.Order) e
 	return err
 }
 
-func (r *OrderRepository) CreateAndReserveOrderItems(ctx context.Context, products []uuid.UUID, deltas []int) error {
+func (r *OrderRepository) CreateAndReserveOrderItems(ctx context.Context, items []order.Item) error {
+	itemsLen := len(items)
+
+	orderIDs := make([]uuid.UUID, itemsLen)
+	ids := make([]uuid.UUID, itemsLen)
+	products := make([]uuid.UUID, itemsLen)
+	deltas := make([]int, itemsLen)
+
+	for i := range items {
+		orderIDs[i] = items[i].OrderID
+		ids[i] = items[i].ID
+		products[i] = items[i].ProductID
+		deltas[i] = items[i].Quantity
+	}
+
 	sql := `
-		update products p
-		set quantity = p.quantity - s.delta
-		from unnest(
-			$1::uuid[],
-			$2::int[]
-		) as s(id, delta)
-		where p.id = s.id
-		and p.quantity >= s.delta
+		with input(id, order_id, product_id, delta) as (
+			select * from unnest(
+				$1::uuid[],
+				$2::uuid[],
+				$3::uuid[],
+				$4::int[]
+			)
+		),
+		reserved as (
+			update products p
+			set quantity = p.quantity - i.delta
+			from input i
+			where p.id = i.product_id
+			and p.quantity >= i.delta
+			returning i.id, i.order_id, i.product_id, i.delta
+		),
+		inserted as (
+			insert into order_items (id, order_id, product_id, quantity)
+			select id, order_id, product_id, delta from reserved
+			returning id
+		)
+		select count(*) from inserted
 	`
 
-	tag, err := r.pool.Exec(ctx, sql, products, deltas)
+	var reserved int
+	err := r.pool.QueryRow(ctx, sql, ids, orderIDs, products, deltas).Scan(&reserved)
 
-	if err != err {
+	if err != nil {
 		return err
 	}
 
-	if int(tag.RowsAffected()) != len(products) {
+	if reserved != len(products) {
 		return product.ErrorNotEnoughProduct
 	}
 

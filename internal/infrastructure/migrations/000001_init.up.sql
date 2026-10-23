@@ -20,7 +20,15 @@ create table order_items (
     id uuid primary key,
     order_id uuid not null references orders(id),
     product_id uuid not null references products(id),
-    constraint unique order_items_product (id, product_id)
+    quantity integer not null,
+    unique (id, product_id)
+);
+
+create table outbox_events (
+    id text primary key,
+    payload jsonb not null,
+    routing_key text not null,
+    occured_at timestamptz not null
 );
 
 commit;
