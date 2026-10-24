@@ -83,26 +83,63 @@ func (r *OrderRepository) CreateAndReserveOrderItems(ctx context.Context, items 
 	return nil
 }
 
-func (r *OrderRepository) BatchMarkExpiredOrders(ctx context.Context, batchSize int) (int, error) {
+func (r *OrderRepository) BatchCancelExpiredOrders(ctx context.Context, batchSize int) ([]int, error) {
 	sql := `
-		update orders o
-		set status = 'expired',
-			updated_at = now()
-		where ctid in (
-			select ctid from orders
+		with expired_orders as (
+			select id from orders
 			where expires_at < now()
 				and status = 'pending_payment'
 			order by expires_at
 			limit $1
 			for update skip locked
+		), 
+		expired_items as (
+			select product_id, quantity 
+			from order_items oi
+			join expired_orders eo on eo.id = oi.order_id
+		),
+		updated_orders as (
+			update orders o
+			set status = 'expired',
+				updated_at = now()
+			from expired_orders eo
+			where o.id = eo.id
+			returning o.id
+		),
+		updated_products as (
+			update products p
+			set quantity = p.quantity + ei.quantity
+			from expired_items ei
+			where p.id = ei.product_id
+			returning p.id
 		)
+		select 
+			(select count(*) from expired_orders) as expired_orders_count,
+			(select count(*) from expired_items) as expired_items_count,
+			(select count(*) from updated_orders) as updated_orders_count,
+			(select count(*) from updated_products) as updated_products_count;
 	`
 
-	tag, err := r.pool.Exec(ctx, sql, batchSize)
+	row := r.pool.QueryRow(ctx, sql, batchSize)
+	data := make([]int, 4)
 
-	if err != nil {
-		return 0, err
+	if err := row.Scan(&data[0], &data[1], &data[2], &data[3]); err != nil {
+		return nil, err
 	}
 
-	return int(tag.RowsAffected()), nil
+	return data, nil
 }
+
+/*
+update orders o
+set status = 'expired',
+	updated_at = now()
+where ctid in (
+	select ctid from orders
+	where expires_at < now()
+		and status = 'pending_payment'
+	order by expires_at
+	limit $1
+	for update skip locked
+)
+*/
