@@ -129,17 +129,3 @@ func (r *OrderRepository) BatchCancelExpiredOrders(ctx context.Context, batchSiz
 
 	return data, nil
 }
-
-/*
-update orders o
-set status = 'expired',
-	updated_at = now()
-where ctid in (
-	select ctid from orders
-	where expires_at < now()
-		and status = 'pending_payment'
-	order by expires_at
-	limit $1
-	for update skip locked
-)
-*/

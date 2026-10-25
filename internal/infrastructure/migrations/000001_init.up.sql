@@ -28,8 +28,8 @@ create table outbox_events (
     id text primary key,
     payload jsonb not null,
     routing_key text not null,
-    occured_at timestamptz not null,
-    delivered boolean not null default false
+    occurred_at timestamptz not null,
+    delivered_at timestamptz
 );
 
 commit;
