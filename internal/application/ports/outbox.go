@@ -16,6 +16,6 @@ type OutboxEvent struct {
 
 type Outbox interface {
 	Save(ctx context.Context, events ...OutboxEvent) error
-	Pull(ctx context.Context, batchSize int) ([]OutboxEvent, error)
-	MarkDelivered(ctx context.Context, ids []string) (int, error)
+	Pull(ctx context.Context, batchSize int) (events []OutboxEvent, err error)
+	MarkDelivered(ctx context.Context, ids []string) (marked int, err error)
 }
