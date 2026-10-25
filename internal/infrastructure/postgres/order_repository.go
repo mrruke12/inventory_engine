@@ -39,7 +39,7 @@ func (r *OrderRepository) CreateOrder(ctx context.Context, o *order.Order) error
 func (r *OrderRepository) CreateAndReserveOrderItems(ctx context.Context, items []order.Item) error {
 	itemsLen := len(items)
 
-	orderIDs := make([]string, itemsLen)
+	orderIDs := make([]uuid.UUID, itemsLen)
 	ids := make([]uuid.UUID, itemsLen)
 	products := make([]uuid.UUID, itemsLen)
 	deltas := make([]int, itemsLen)
@@ -55,7 +55,7 @@ func (r *OrderRepository) CreateAndReserveOrderItems(ctx context.Context, items 
 		with input(id, order_id, product_id, delta) as (
 			select * from unnest(
 				$1::uuid[],
-				$2::text[],
+				$2::uuid[],
 				$3::uuid[],
 				$4::int[]
 			)

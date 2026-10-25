@@ -2,8 +2,12 @@ package main
 
 import (
 	"context"
+	"fmt"
+	"sync"
+	"uuid"
 
 	"github.com/mrruke12/inventory_engine/internal/application/orderusecase"
+	"github.com/mrruke12/inventory_engine/internal/domains/order"
 	"github.com/mrruke12/inventory_engine/internal/infrastructure/config"
 	"github.com/mrruke12/inventory_engine/internal/infrastructure/postgres"
 )
@@ -44,17 +48,31 @@ func main() {
 
 	s := orderusecase.NewService(uow, orderRepo)
 
-	// id, err := s.CreateOrder(context.Background(), []order.OrderItem{
-	// 	{ProductID: uuid.MustParse("01a15049-79f6-733f-9e4c-a620316a3dcc"), Quantity: 1},
-	// })
+	var wg sync.WaitGroup
 
-	err = s.CleanOrders(context.Background())
+	for i := range 10 {
+		wg.Add(1)
 
-	if err != nil {
-		panic(err)
+		go func(i int) {
+			defer wg.Done()
+
+			for range 1000 {
+				_, err := s.CreateOrder(context.Background(), []order.OrderItem{
+					{ProductID: uuid.MustParse("01a15049-79f6-733f-9e4c-a620316a3dcc"), Quantity: 1},
+				})
+
+				// err = s.CleanOrders(context.Background())
+
+				if err != nil {
+					fmt.Println(i, err)
+				}
+			}
+		}(i)
 	}
 
-	// fmt.Println(id)
+	wg.Wait()
+
+	fmt.Println("done")
 
 	pool.Close()
 }

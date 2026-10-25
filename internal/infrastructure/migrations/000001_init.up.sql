@@ -9,7 +9,7 @@ create table products (
 );
 
 create table orders (
-    id text primary key,
+    id uuid primary key,
     status order_status not null,
     expires_at timestamptz not null default now() + interval '5 minutes',
     created_at timestamptz not null default now(),
@@ -18,7 +18,7 @@ create table orders (
 
 create table order_items (
     id uuid primary key,
-    order_id text not null references orders(id),
+    order_id uuid not null references orders(id),
     product_id uuid not null references products(id),
     quantity integer not null,
     unique (id, product_id)
