@@ -30,7 +30,7 @@ func (r *OrderRepository) CreateOrder(ctx context.Context, o *order.Order) error
 	classifiedErr := classifyError(err)
 
 	if errors.Is(classifiedErr, ErrConflict) {
-		return order.ErrorOrderExists
+		return order.ErrOrderExists
 	}
 
 	return err
@@ -84,7 +84,7 @@ func (r *OrderRepository) CreateAndReserveOrderItems(ctx context.Context, items 
 	}
 
 	if reserved != len(products) {
-		return product.ErrorNotEnoughProduct
+		return product.ErrNotEnoughProduct
 	}
 
 	return nil

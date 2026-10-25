@@ -32,4 +32,13 @@ create table outbox_events (
     delivered_at timestamptz
 );
 
+create table idempotency_keys (
+    key text not null,
+    scope text not null,
+    request_hash bytea not null,
+    result jsonb not null,
+    created_at timestamptz not null default now(),
+    primary key (key, scope)
+);
+
 commit;

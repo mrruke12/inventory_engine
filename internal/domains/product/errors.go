@@ -3,5 +3,5 @@ package product
 import "errors"
 
 var (
-	ErrorNotEnoughProduct error = errors.New("not enough product quantity")
+	ErrNotEnoughProduct error = errors.New("not enough product quantity")
 )
