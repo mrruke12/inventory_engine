@@ -8,12 +8,12 @@ import (
 
 type Item struct {
 	ID        uuid.UUID
-	OrderID   uuid.UUID
+	OrderID   string
 	ProductID uuid.UUID
 	Quantity  int
 }
 
-func NewItem(orderID, productID uuid.UUID, quantity int) *Item {
+func NewItem(orderID string, productID uuid.UUID, quantity int) *Item {
 	return &Item{
 		ID:        uuid.NewV7(),
 		OrderID:   orderID,
@@ -27,7 +27,7 @@ type OrderItem struct {
 	Quantity  int
 }
 
-func (i *OrderItem) ToItem(orderID uuid.UUID) *Item {
+func (i *OrderItem) ToItem(orderID string) *Item {
 	return NewItem(
 		orderID,
 		i.ProductID,
@@ -35,7 +35,7 @@ func (i *OrderItem) ToItem(orderID uuid.UUID) *Item {
 	)
 }
 
-func ItemsFromOrderItems(orderID uuid.UUID, orderItems []OrderItem) []Item {
+func ItemsFromOrderItems(orderID string, orderItems []OrderItem) []Item {
 	return aggr.Map(orderItems, func(v OrderItem, i int) Item {
 		return *v.ToItem(orderID)
 	})

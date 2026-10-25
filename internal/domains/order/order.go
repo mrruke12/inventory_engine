@@ -2,20 +2,19 @@ package order
 
 import (
 	"time"
-	"uuid"
 )
 
 type Order struct {
-	ID        uuid.UUID
+	ID        string
 	Status    Status
 	ExpiresAt time.Time
 	CreatedAt time.Time
 	UpdatedAt time.Time
 }
 
-func NewOrder() *Order {
+func NewOrder(orderID string) *Order {
 	return &Order{
-		ID:     uuid.NewV7(),
+		ID:     orderID,
 		Status: StatusPendingPayment,
 	}
 }

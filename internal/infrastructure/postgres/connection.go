@@ -9,6 +9,8 @@ import (
 func Connect(ctx context.Context, connString string) (*pgxpool.Pool, error) {
 	config, err := pgxpool.ParseConfig(connString)
 
+	config.MaxConns = 10
+
 	if err != nil {
 		return nil, err
 	}

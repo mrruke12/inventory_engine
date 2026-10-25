@@ -2,6 +2,7 @@ package postgres
 
 import (
 	"context"
+	"errors"
 	"uuid"
 
 	"github.com/mrruke12/inventory_engine/internal/domains/order"
@@ -18,13 +19,19 @@ func NewOrderRepository(pool Querier) order.Repository {
 	}
 }
 
-func (r *OrderRepository) CreateOrder(ctx context.Context, order *order.Order) error {
+func (r *OrderRepository) CreateOrder(ctx context.Context, o *order.Order) error {
 	sql := `
 		insert into orders (id, status)
 		values ($1, $2)
 	`
 
-	_, err := r.pool.Exec(ctx, sql, order.ID, order.Status)
+	_, err := r.pool.Exec(ctx, sql, o.ID, o.Status)
+
+	classifiedErr := classifyError(err)
+
+	if errors.Is(classifiedErr, ErrConflict) {
+		return order.ErrorOrderExists
+	}
 
 	return err
 }
@@ -32,7 +39,7 @@ func (r *OrderRepository) CreateOrder(ctx context.Context, order *order.Order) e
 func (r *OrderRepository) CreateAndReserveOrderItems(ctx context.Context, items []order.Item) error {
 	itemsLen := len(items)
 
-	orderIDs := make([]uuid.UUID, itemsLen)
+	orderIDs := make([]string, itemsLen)
 	ids := make([]uuid.UUID, itemsLen)
 	products := make([]uuid.UUID, itemsLen)
 	deltas := make([]int, itemsLen)
@@ -48,7 +55,7 @@ func (r *OrderRepository) CreateAndReserveOrderItems(ctx context.Context, items 
 		with input(id, order_id, product_id, delta) as (
 			select * from unnest(
 				$1::uuid[],
-				$2::uuid[],
+				$2::text[],
 				$3::uuid[],
 				$4::int[]
 			)
