@@ -137,32 +137,63 @@ func (r *OrderRepository) BatchCancelExpiredOrders(ctx context.Context, batchSiz
 	return data, nil
 }
 
-func (r *OrderRepository) ReleaseOrder(ctx context.Context, orderID uuid.UUID) (order.Status, bool, error) {
+// Cancels order with the parameterized conditions e.g. release if pending or cancel if completed.
+//
+// Underhood proceeds the full cancellation of the order i.e. sets the order status to the passed
+// "toStatus" and returns order_items products' quantities back to the storage if the order status
+// initially is equal to "fromStatus".
+func (r *OrderRepository) parameterizedCancelOrder(
+	ctx context.Context,
+	orderID uuid.UUID,
+	fromStatus order.Status,
+	toStatus order.Status,
+) (*order.Status, bool, bool, error) {
 	sql := `
 		with locked_order as (
-			select * from orders
+			select id, status from orders
 			where id = $1
 			for update
 		),
+		items as (
+			select * from order_items i
+			join locked_order o 
+			on o.id = i.order_id
+			and o.status = $2 -- do not select items if the order status is invalid, so we don't lock any products doing no-op
+		),
+		locked_products as (
+			select p.id from products p
+			join items i on i.product_id = p.id
+			for update of p
+		),
 		updated_order as (
 			update orders o
-			set status = 'released'
+			set status = $3
 			from locked_order l
 			where o.id = l.id
-				and o.status = 'pending'
+				and o.status = $2
 			returning o.status
+		),
+		updated_products as (
+			update products p
+			set quantity = p.quantity + i.quantity
+			from items i
+			where p.id = i.product_id
 		)
 		select
+			(select status from locked_order) is not null as is_found,
 			(select status from locked_order) as initial_status,
 			(select status from updated_order) is not null as is_updated
 	`
 
-	row := r.pool.QueryRow(ctx, sql, orderID)
+	var found bool
+	var initialStatus *order.Status
+	var updated bool
 
-	var initialStatus order.Status
-	var isUpdated bool
+	err := r.pool.QueryRow(ctx, sql, orderID, fromStatus, toStatus).Scan(&found, &initialStatus, &updated)
 
-	err := row.Scan(&initialStatus, &isUpdated)
+	return initialStatus, updated, found, err
+}
 
-	return initialStatus, isUpdated, err
+func (r *OrderRepository) ReleaseOrder(ctx context.Context, orderID uuid.UUID) (*order.Status, bool, bool, error) {
+	return r.parameterizedCancelOrder(ctx, orderID, order.StatusPending, order.StatusReleased)
 }

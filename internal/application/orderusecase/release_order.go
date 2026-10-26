@@ -5,17 +5,31 @@ import (
 	"log/slog"
 	"uuid"
 
+	"github.com/mrruke12/inventory_engine/internal/application"
 	"github.com/mrruke12/inventory_engine/internal/domains/order"
 )
 
 func (s *Service) ReleaseOrder(ctx context.Context, orderID uuid.UUID) (bool, error) {
-	initialStatus, updated, err := s.orderRepo.ReleaseOrder(ctx, orderID)
+	initialStatus, updated, found, err := s.orderRepo.ReleaseOrder(ctx, orderID)
+
+	if !found {
+		return false, order.ErrOrderNotFound // no-op with error
+	}
 
 	if err != nil {
 		return false, err
 	}
 
-	switch initialStatus {
+	if found && initialStatus == nil { // this is actually impossible since found = true ensures the row was found with the status itself
+		slog.Error(
+			"Impossible condition met in ReleaseOrder",
+			"found", found,
+			"initialStatus", initialStatus,
+		)
+		return false, application.ErrImpossibleCondition
+	}
+
+	switch *initialStatus {
 	case order.StatusPending, order.StatusReleased, order.StatusExpired:
 		return updated, nil // updated if the order is pending or no-op if the order is already released
 	case order.StatusCanceled:
@@ -27,6 +41,6 @@ func (s *Service) ReleaseOrder(ctx context.Context, orderID uuid.UUID) (bool, er
 			"orderID", orderID,
 			"status", initialStatus,
 		)
-		return updated, nil // not an error since transition can happen only from pending status
+		return false, nil // not an error since transition can happen only if the order is pending
 	}
 }
