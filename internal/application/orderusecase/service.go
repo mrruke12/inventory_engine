@@ -7,13 +7,11 @@ import (
 
 type Service struct {
 	uow       ports.UnitOfWork
-	idemp     ports.Idempotency
 	orderRepo order.Repository
 }
 
-func NewService(uow ports.UnitOfWork, idemp ports.Idempotency, orderRepo order.Repository) *Service {
+func NewService(uow ports.UnitOfWork, orderRepo order.Repository) *Service {
 	return &Service{
-		idemp:     idemp,
 		uow:       uow,
 		orderRepo: orderRepo,
 	}

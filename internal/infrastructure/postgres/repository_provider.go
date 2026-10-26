@@ -28,3 +28,7 @@ func NewRepositoryProvider(tx Querier) ports.RepositoryProvider {
 func (p *RepositoryProvider) OrderRepository() order.Repository {
 	return NewOrderRepository(p.tx)
 }
+
+func (p *RepositoryProvider) Idempotency() ports.Idempotency {
+	return NewIdempotency(p.tx)
+}

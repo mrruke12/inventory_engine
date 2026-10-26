@@ -27,7 +27,7 @@ func (s *Service) CreateOrder(ctx context.Context, cmd CreateOrderCommand) (uuid
 			return err
 		}
 
-		cached, err := s.idemp.GetOrCreate(ctx, idempKey)
+		cached, err := rp.Idempotency().GetOrCreate(ctx, idempKey)
 
 		if err != nil {
 			return err
