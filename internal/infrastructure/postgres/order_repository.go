@@ -136,3 +136,33 @@ func (r *OrderRepository) BatchCancelExpiredOrders(ctx context.Context, batchSiz
 
 	return data, nil
 }
+
+func (r *OrderRepository) ReleaseOrder(ctx context.Context, orderID uuid.UUID) (order.Status, bool, error) {
+	sql := `
+		with locked_order as (
+			select * from orders
+			where id = $1
+			for update
+		),
+		updated_order as (
+			update orders o
+			set status = 'released'
+			from locked_order l
+			where o.id = l.id
+				and o.status = 'pending'
+			returning o.status
+		)
+		select
+			(select status from locked_order) as initial_status,
+			(select status from updated_order) is not null as is_updated
+	`
+
+	row := r.pool.QueryRow(ctx, sql, orderID)
+
+	var initialStatus order.Status
+	var isUpdated bool
+
+	err := row.Scan(&initialStatus, &isUpdated)
+
+	return initialStatus, isUpdated, err
+}

@@ -16,6 +16,6 @@ type Order struct {
 func NewOrder() *Order {
 	return &Order{
 		ID:     uuid.NewV7(),
-		Status: StatusPendingPayment,
+		Status: StatusPending,
 	}
 }

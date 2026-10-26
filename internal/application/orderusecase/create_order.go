@@ -47,6 +47,8 @@ func (s *Service) CreateOrder(ctx context.Context, cmd CreateOrderCommand) (uuid
 			return err
 		}
 
+		result = o.ID
+
 		return orderRepo.CreateAndReserveOrderItems(ctx, items)
 	})
 

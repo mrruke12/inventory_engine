@@ -1,6 +1,6 @@
 begin;
 
-create type order_status as enum ('pending', 'expired', 'completed');
+create type order_status as enum ('pending', 'released', 'expired', 'canceled', 'completed');
 
 create table products (
     id uuid primary key,
