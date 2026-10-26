@@ -24,14 +24,6 @@ create table order_items (
     unique (id, product_id)
 );
 
-create table outbox_events (
-    id text primary key,
-    payload jsonb not null,
-    routing_key text not null,
-    occurred_at timestamptz not null,
-    delivered_at timestamptz
-);
-
 create table idempotency_keys (
     key text not null,
     scope text not null,
