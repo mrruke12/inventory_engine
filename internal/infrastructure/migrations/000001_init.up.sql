@@ -5,7 +5,7 @@ create type order_status as enum ('pending', 'released', 'expired', 'canceled', 
 create table products (
     id uuid primary key,
     name text unique not null,
-    quantity integer not null
+    quantity integer not null check (quantity >= 0)
 );
 
 create table orders (
@@ -20,8 +20,8 @@ create table order_items (
     id uuid primary key,
     order_id uuid not null references orders(id),
     product_id uuid not null references products(id),
-    quantity integer not null,
-    unique (id, product_id)
+    quantity integer not null check (quantity > 0),
+    unique (order_id, product_id)
 );
 
 create table idempotency_keys (
