@@ -36,74 +36,104 @@ func (r *OrderRepository) CreateOrder(ctx context.Context, o *order.Order) error
 	return err
 }
 
-func (r *OrderRepository) CreateAndReserveOrderItems(ctx context.Context, items []order.Item) error {
+func (r *OrderRepository) CreateAndReserveOrderItems(ctx context.Context, orderID uuid.UUID, items []order.Item) error {
 	itemsLen := len(items)
 
-	orderIDs := make([]uuid.UUID, itemsLen)
 	ids := make([]uuid.UUID, itemsLen)
 	products := make([]uuid.UUID, itemsLen)
-	deltas := make([]int, itemsLen)
+	amounts := make([]int, itemsLen)
 
 	for i := range items {
-		orderIDs[i] = items[i].OrderID
 		ids[i] = items[i].ID
 		products[i] = items[i].ProductID
-		deltas[i] = items[i].Quantity
+		amounts[i] = items[i].Amount
 	}
 
 	sql := `
-		with input(id, order_id, product_id, delta) as (
-			select * from unnest(
+		with locked_order as (
+			select * from orders
+			where id = $4
+			for update
+		),
+		inserted_items as (
+			insert into order_items (id, order_id, product_id, amount)
+			select 
+				t.id, 
+				(select id from locked_order) as order_id, 
+				t.product_id, 
+				t.amount
+			from unnest(
 				$1::uuid[],
 				$2::uuid[],
-				$3::uuid[],
-				$4::int[]
-			)
+				$3::int[]
+			) as t(id, product_id, amount)
+			returning product_id, amount
 		),
-		reserved as (
+		locked_products as (
+			select i.product_id as id, i.amount from products p
+			join inserted_items i on i.product_id = p.id
+			for update of p
+		),
+		reserved_products as (
 			update products p
-			set quantity = p.quantity - i.delta
-			from input i
-			where p.id = i.product_id
-			and p.quantity >= i.delta
-			returning i.id, i.order_id, i.product_id, i.delta
+			set stock = p.stock - lp.amount
+			from locked_products lp
+			where p.id = lp.id
+			and p.stock >= lp.amount
+			returning p.id
 		),
-		inserted as (
-			insert into order_items (id, order_id, product_id, quantity)
-			select id, order_id, product_id, delta from reserved
-			returning id
+		info as ( 
+			select 
+				(select id from locked_order) is not null as found_order,
+				(select count(*) from inserted_items) as items,
+				(select count(*) from reserved_products) as products
 		)
-		select count(*) from inserted
+		select 
+			found_order,
+			(items = products) as valid
+			from info
 	`
 
-	var reserved int
-	err := r.pool.QueryRow(ctx, sql, ids, orderIDs, products, deltas).Scan(&reserved)
+	var found, valid bool
+	err := r.pool.QueryRow(ctx, sql, ids, products, amounts, orderID).Scan(&found, &valid)
 
 	if err != nil {
 		return err
 	}
 
-	if reserved != len(products) {
+	if !found {
+		return order.ErrOrderNotFound
+	}
+
+	if !valid {
 		return product.ErrNotEnoughProduct
 	}
 
 	return nil
 }
 
-func (r *OrderRepository) BatchCancelExpiredOrders(ctx context.Context, batchSize int) ([]int, error) {
+func (r *OrderRepository) BatchCancelExpiredOrders(ctx context.Context, batchSize int) (int, error) {
 	sql := `
 		with expired_orders as (
 			select id from orders
 			where expires_at < now()
-				and status = 'pending_payment'
-			order by expires_at
+				and status = 'pending'
+			order by expires_at, id
 			limit $1
 			for update skip locked
 		), 
 		expired_items as (
-			select product_id, quantity 
+			select oi.product_id, sum(oi.amount) as amount
 			from order_items oi
 			join expired_orders eo on eo.id = oi.order_id
+			group by oi.product_id
+		),
+		locked_products as (
+			select p.id, ei.amount
+			from products p
+			join expired_items ei on p.id = ei.product_id
+			order by p.id
+			for update of p
 		),
 		updated_orders as (
 			update orders o
@@ -115,26 +145,22 @@ func (r *OrderRepository) BatchCancelExpiredOrders(ctx context.Context, batchSiz
 		),
 		updated_products as (
 			update products p
-			set quantity = p.quantity + ei.quantity
+			set stock = p.stock + ei.amount
 			from expired_items ei
 			where p.id = ei.product_id
 			returning p.id
 		)
-		select 
-			(select count(*) from expired_orders) as expired_orders_count,
-			(select count(*) from expired_items) as expired_items_count,
-			(select count(*) from updated_orders) as updated_orders_count,
-			(select count(*) from updated_products) as updated_products_count;
+		select count(*) as expired_orders_count from expired_orders
 	`
 
 	row := r.pool.QueryRow(ctx, sql, batchSize)
-	data := make([]int, 4)
+	var updated int
 
-	if err := row.Scan(&data[0], &data[1], &data[2], &data[3]); err != nil {
-		return nil, err
+	if err := row.Scan(&updated); err != nil {
+		return updated, err
 	}
 
-	return data, nil
+	return updated, nil
 }
 
 // Cancels order with the parameterized conditions e.g. release if pending or cancel if completed.
@@ -161,8 +187,9 @@ func (r *OrderRepository) parameterizedCancelOrder(
 			and o.status = $2 -- do not select items if the order status is invalid, so we don't lock any products doing no-op
 		),
 		locked_products as (
-			select p.id from products p
+			select p.id, i.amount from products p
 			join items i on i.product_id = p.id
+			order by p.id
 			for update of p
 		),
 		updated_order as (
@@ -175,9 +202,9 @@ func (r *OrderRepository) parameterizedCancelOrder(
 		),
 		updated_products as (
 			update products p
-			set quantity = p.quantity + i.quantity
-			from items i
-			where p.id = i.product_id
+			set stock = p.stock + lp.amount
+			from locked_products lp
+			where p.id = lp.id
 		)
 		select
 			(select status from locked_order) is not null as is_found,

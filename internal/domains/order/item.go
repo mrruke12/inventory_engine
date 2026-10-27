@@ -10,28 +10,28 @@ type Item struct {
 	ID        uuid.UUID
 	OrderID   uuid.UUID
 	ProductID uuid.UUID
-	Quantity  int
+	Amount    int
 }
 
-func NewItem(orderID, productID uuid.UUID, quantity int) *Item {
+func NewItem(orderID, productID uuid.UUID, amount int) *Item {
 	return &Item{
 		ID:        uuid.NewV7(),
 		OrderID:   orderID,
 		ProductID: productID,
-		Quantity:  quantity,
+		Amount:    amount,
 	}
 }
 
 type OrderItem struct {
 	ProductID uuid.UUID
-	Quantity  int
+	Amount    int
 }
 
 func (i *OrderItem) ToItem(orderID uuid.UUID) *Item {
 	return NewItem(
 		orderID,
 		i.ProductID,
-		i.Quantity,
+		i.Amount,
 	)
 }
 

@@ -5,7 +5,7 @@ import (
 	"log/slog"
 )
 
-const batchSize = 1
+const batchSize = 100
 
 func (s *Service) CleanOrders(ctx context.Context) error {
 	updated, err := s.orderRepo.BatchCancelExpiredOrders(ctx, batchSize)
@@ -16,10 +16,7 @@ func (s *Service) CleanOrders(ctx context.Context) error {
 
 	slog.Info(
 		"Canceled expired orders",
-		"expired_orders_count", updated[0],
-		"expired_items_count", updated[1],
-		"updated_orders_count", updated[2],
-		"updated_products_count", updated[3],
+		"updated", updated,
 	)
 
 	return nil
