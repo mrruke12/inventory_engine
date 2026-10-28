@@ -8,8 +8,8 @@ import (
 	_ "github.com/golang-migrate/migrate/v4/source/file"
 )
 
-func Migrate(connString string) error {
-	m, err := migrate.New("file://internal/infrastructure/migrations", connString)
+func Migrate(pathToMigrations, connString string) error {
+	m, err := migrate.New(pathToMigrations, connString)
 
 	if err != nil {
 		return err

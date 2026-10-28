@@ -5,9 +5,7 @@ import (
 	"log/slog"
 )
 
-const batchSize = 100
-
-func (s *Service) CleanOrders(ctx context.Context) error {
+func (s *Service) CleanOrders(ctx context.Context, batchSize int) error {
 	updated, err := s.orderRepo.BatchCancelExpiredOrders(ctx, batchSize)
 
 	if err != nil {
