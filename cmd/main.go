@@ -21,7 +21,7 @@ func main() {
 		panic(err)
 	}
 
-	err = postgres.Migrate(conf.ConnString())
+	err = postgres.Migrate("file://internal/infrastructure/migrations", conf.ConnString())
 
 	if err != nil {
 		panic(err)
