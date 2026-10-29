@@ -6,7 +6,7 @@ import (
 )
 
 func (s *Service) CleanOrders(ctx context.Context, batchSize int) error {
-	updated, err := s.orderRepo.BatchCancelExpiredOrders(ctx, batchSize)
+	updated, err := s.orderRepo.BatchMarkExpiredOrders(ctx, batchSize)
 
 	if err != nil {
 		return err

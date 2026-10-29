@@ -112,7 +112,7 @@ func (r *OrderRepository) CreateAndReserveOrderItems(ctx context.Context, orderI
 	return nil
 }
 
-func (r *OrderRepository) BatchCancelExpiredOrders(ctx context.Context, batchSize int) (int, error) {
+func (r *OrderRepository) BatchMarkExpiredOrders(ctx context.Context, batchSize int) (int, error) {
 	sql := `
 		with expired_orders as (
 			select id from orders

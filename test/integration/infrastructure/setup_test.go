@@ -62,7 +62,11 @@ func setup() error {
 
 	pgContainer, pool, err = integration.SetupPostgres()
 
-	return err
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
 
 func teardown() error {

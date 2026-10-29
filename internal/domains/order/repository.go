@@ -8,7 +8,7 @@ import (
 type Repository interface {
 	CreateOrder(ctx context.Context, order *Order) error
 	CreateAndReserveOrderItems(ctx context.Context, orderID uuid.UUID, items []Item) error
-	BatchCancelExpiredOrders(ctx context.Context, batchSize int) (updatedOrders int, err error)
+	BatchMarkExpiredOrders(ctx context.Context, batchSize int) (updatedOrders int, err error)
 
 	// Releases an order if it's still pending; no-op otherwise. Returns:
 	//  1. initialStatus - initial order status (nil if found is false or error is not nil);
