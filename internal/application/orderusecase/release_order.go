@@ -12,12 +12,12 @@ import (
 func (s *Service) ReleaseOrder(ctx context.Context, orderID uuid.UUID) (bool, error) {
 	initialStatus, updated, found, err := s.orderRepo.ReleaseOrder(ctx, orderID)
 
-	if !found {
-		return false, order.ErrOrderNotFound // no-op with error
-	}
-
 	if err != nil {
 		return false, err
+	}
+
+	if !found {
+		return false, order.ErrOrderNotFound // no-op with error
 	}
 
 	if found && initialStatus == nil { // this is actually impossible since found = true ensures the row was found with the status itself
