@@ -2,7 +2,6 @@ package orderusecase
 
 import (
 	"context"
-	"log/slog"
 	"uuid"
 
 	"github.com/mrruke12/inventory_engine/internal/application"
@@ -11,7 +10,7 @@ import (
 )
 
 func (s *Service) ReleaseOrder(ctx context.Context, orderID uuid.UUID) (bool, error) {
-	result := order.OrderUpdateResult{}
+	result := order.PendingOrderUpdateResult{}
 
 	err := s.uow.Do(ctx, func(ctx context.Context, rp ports.RepositoryProvider) error {
 		var err error
@@ -28,13 +27,8 @@ func (s *Service) ReleaseOrder(ctx context.Context, orderID uuid.UUID) (bool, er
 		return false, order.ErrOrderNotFound // no-op with error
 	}
 
-	if result.InitialStatus == nil { // this is actually impossible since found = true ensures the row was found with the status itself
-		slog.Error(
-			"Impossible condition met in ReleaseOrder",
-			"found", result.Found,
-			"initialStatus", result.InitialStatus,
-		)
-		return false, application.ErrImpossibleCondition
+	if err := requireInitialStatus(result.InitialStatus); err != nil {
+		return false, err
 	}
 
 	if result.Expired {
@@ -45,18 +39,12 @@ func (s *Service) ReleaseOrder(ctx context.Context, orderID uuid.UUID) (bool, er
 		return false, application.ErrMustUpdate
 	}
 
-	switch *result.InitialStatus {
+	status := *result.InitialStatus
+
+	switch status {
 	case order.StatusPending, order.StatusReleased, order.StatusExpired:
 		return result.Updated, nil // updated if the order is pending or no-op if the order is already released
-	case order.StatusCanceled:
-		return false, order.ErrOrderCanceled // cannot release canceled order
-	case order.StatusCompleted:
-		return false, order.ErrOrderCompleted // cannot release completed order, only cancel
 	default:
-		slog.Warn("Unknown order status",
-			"orderID", orderID,
-			"status", result.InitialStatus,
-		)
-		return false, nil // not an error since transition can happen only if the order is pending
+		return result.Updated, order.ErrOrderByStatus(status)
 	}
 }

@@ -163,7 +163,7 @@ func (r *OrderRepository) BatchMarkExpiredOrders(ctx context.Context, batchSize 
 	return updated, nil
 }
 
-func (r *OrderRepository) ReleaseOrder(ctx context.Context, orderID uuid.UUID) (order.OrderUpdateResult, error) {
+func (r *OrderRepository) ReleaseOrder(ctx context.Context, orderID uuid.UUID) (order.PendingOrderUpdateResult, error) {
 	sql := `
 		with locked_order as (
 			select id, status, expires_at from orders
@@ -210,14 +210,14 @@ func (r *OrderRepository) ReleaseOrder(ctx context.Context, orderID uuid.UUID) (
 			(select status from updated_order) is not null as is_updated
 	`
 
-	result := order.OrderUpdateResult{}
+	result := order.PendingOrderUpdateResult{}
 
 	err := r.pool.QueryRow(ctx, sql, orderID).Scan(&result.Found, &result.Expired, &result.InitialStatus, &result.Updated)
 
 	return result, err
 }
 
-func (r *OrderRepository) CompleteOrder(ctx context.Context, orderID uuid.UUID) (order.OrderUpdateResult, error) {
+func (r *OrderRepository) CompleteOrder(ctx context.Context, orderID uuid.UUID) (order.PendingOrderUpdateResult, error) {
 	sql := `
 		with locked_order as (
 			select id, status, expires_at
@@ -244,9 +244,55 @@ func (r *OrderRepository) CompleteOrder(ctx context.Context, orderID uuid.UUID) 
 			(select status from updated_order) is not null as is_updated
 	`
 
-	result := order.OrderUpdateResult{}
+	result := order.PendingOrderUpdateResult{}
 
 	err := r.pool.QueryRow(ctx, sql, orderID).Scan(&result.Found, &result.Expired, &result.InitialStatus, &result.Updated)
+
+	return result, err
+}
+
+func (r *OrderRepository) CancelOrder(ctx context.Context, orderID uuid.UUID) (order.CancelOrderResult, error) {
+	sql := `
+		with locked_order as (
+			select id, status from orders
+			where id = $1
+			for update
+		),
+		items as (
+			select * from order_items i
+			join locked_order o 
+			on o.id = i.order_id
+			and o.status = 'completed' -- do not select items if the order status is invalid, so we don't lock any products doing no-op
+		),
+		locked_products as (
+			select p.id, i.amount from products p
+			join items i on i.product_id = p.id
+			order by p.id
+			for update of p
+		),
+		updated_order as (
+			update orders o
+			set status = 'canceled'
+			from locked_order l
+			where o.id = l.id
+				and o.status = 'completed'
+			returning o.status
+		),
+		updated_products as (
+			update products p
+			set stock = p.stock + lp.amount
+			from locked_products lp
+			where p.id = lp.id
+		)
+		select
+			(select status from locked_order) is not null as is_found,
+			(select status from locked_order) as initial_status,
+			(select status from updated_order) is not null as is_updated
+	`
+
+	result := order.CancelOrderResult{}
+
+	err := r.pool.QueryRow(ctx, sql, orderID).Scan(&result.Found, &result.InitialStatus, &result.Updated)
 
 	return result, err
 }

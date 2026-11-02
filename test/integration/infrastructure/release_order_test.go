@@ -16,7 +16,7 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func setupReleaseScenario(
+func setupOrderWithItem(
 	t *testing.T,
 	pool *pgxpool.Pool,
 	orderID uuid.UUID,
@@ -61,7 +61,7 @@ func TestReleaseOrder_PendingNotExpired_UpdatesAndRestocks(t *testing.T) {
 		amount       = 3
 	)
 
-	productID := setupReleaseScenario(
+	productID := setupOrderWithItem(
 		t, pool, orderID, order.StatusPending,
 		time.Now().Add(5*time.Minute),
 		initialStock, amount,
@@ -123,7 +123,7 @@ func TestReleaseOrder_PendingExpired_NoEffect(t *testing.T) {
 		amount       = 3
 	)
 
-	productID := setupReleaseScenario(
+	productID := setupOrderWithItem(
 		t, pool, orderID, order.StatusPending,
 		time.Now().Add(-1*time.Minute),
 		initialStock, amount,
@@ -167,7 +167,7 @@ func TestReleaseOrder_NonPendingStatus_NoEffect(t *testing.T) {
 				amount       = 3
 			)
 
-			productID := setupReleaseScenario(
+			productID := setupOrderWithItem(
 				t, pool, orderID, tc.status,
 				time.Now().Add(5*time.Minute),
 				initialStock, amount,
@@ -201,7 +201,7 @@ func TestReleaseOrder_NonPendingExpired_ExpiredTrue(t *testing.T) {
 		amount       = 3
 	)
 
-	productID := setupReleaseScenario(
+	productID := setupOrderWithItem(
 		t, pool, orderID, order.StatusCompleted,
 		time.Now().Add(-1*time.Minute),
 		initialStock, amount,
@@ -233,7 +233,7 @@ func TestReleaseOrder_Idempotent(t *testing.T) {
 		amount       = 3
 	)
 
-	productID := setupReleaseScenario(
+	productID := setupOrderWithItem(
 		t, pool, orderID, order.StatusPending,
 		time.Now().Add(5*time.Minute),
 		initialStock, amount,

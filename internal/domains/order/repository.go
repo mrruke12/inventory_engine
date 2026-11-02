@@ -5,9 +5,15 @@ import (
 	"uuid"
 )
 
-type OrderUpdateResult struct {
+type PendingOrderUpdateResult struct {
 	InitialStatus *Status
 	Expired       bool
+	Updated       bool
+	Found         bool
+}
+
+type CancelOrderResult struct {
+	InitialStatus *Status
 	Updated       bool
 	Found         bool
 }
@@ -16,12 +22,7 @@ type Repository interface {
 	CreateOrder(ctx context.Context, order *Order) error
 	CreateAndReserveOrderItems(ctx context.Context, orderID uuid.UUID, items []Item) error
 	BatchMarkExpiredOrders(ctx context.Context, batchSize int) (updatedOrders int, err error)
-
-	// Releases an order if it's still pending; no-op otherwise. Returns:
-	//  1. initialStatus - initial order status (nil if found is false or error is not nil);
-	//  1. updated - is the status changed (false if found is false or err is not nil);
-	//  1. found - is the order found;
-	//  1. err - driver error.
-	ReleaseOrder(ctx context.Context, orderID uuid.UUID) (result OrderUpdateResult, err error)
-	CompleteOrder(ctx context.Context, orderID uuid.UUID) (result OrderUpdateResult, err error)
+	ReleaseOrder(ctx context.Context, orderID uuid.UUID) (result PendingOrderUpdateResult, err error)
+	CompleteOrder(ctx context.Context, orderID uuid.UUID) (result PendingOrderUpdateResult, err error)
+	CancelOrder(ctx context.Context, orderID uuid.UUID) (result CancelOrderResult, err error)
 }
