@@ -39,9 +39,6 @@ func main() {
 		panic(err)
 	}
 
-	repo := postgres.NewOrderRepository(pool)
-	uow := postgres.neworder
-
 	defer pool.Close()
 
 	fmt.Println("All's set up")

@@ -8,27 +8,12 @@ import (
 	"time"
 	"uuid"
 
-	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/mrruke12/inventory_engine/internal/domains/order"
 	"github.com/mrruke12/inventory_engine/internal/infrastructure/postgres"
 	"github.com/mrruke12/inventory_engine/test/integration"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
-
-func insertOrder(t *testing.T, pool interface {
-	Exec(ctx context.Context, sql string, args ...any) (pgconn.CommandTag, error)
-}, id uuid.UUID, status order.Status, expiresAt time.Time) {
-	t.Helper()
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
-	defer cancel()
-
-	_, err := pool.Exec(ctx,
-		`insert into orders (id, status, expires_at) values ($1, $2, $3)`,
-		id, string(status), expiresAt,
-	)
-	require.NoError(t, err)
-}
 
 func TestCompleteOrder_NotFound(t *testing.T) {
 	integration.CleanupPostgres(t, pool)
