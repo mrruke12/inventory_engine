@@ -68,7 +68,7 @@ func TestReleaseOrder_ExpiredButNotMarked(t *testing.T) {
 	orderID, err := createOrder(ctx, productID, uuid.New().String(), 1)
 	require.NoError(t, err)
 
-	_, err = pool.Exec(ctx, `update orders set expires_at = now() where id = $1`, orderID)
+	_, err = pool.Exec(ctx, `update orders set expires_at = now() - interval '1 hours' where id = $1`, orderID)
 	require.NoError(t, err)
 
 	updated, err := orderService.ReleaseOrder(ctx, orderID)
