@@ -163,7 +163,7 @@ func (r *OrderRepository) BatchMarkExpiredOrders(ctx context.Context, batchSize 
 	return updated, nil
 }
 
-func (r *OrderRepository) ReleaseOrder(ctx context.Context, orderID uuid.UUID) (*order.Status, bool, bool, error) {
+func (r *OrderRepository) ReleaseOrder(ctx context.Context, orderID uuid.UUID) (order.OrderUpdateResult, error) {
 	sql := `
 		with locked_order as (
 			select id, status, expires_at from orders
@@ -200,16 +200,20 @@ func (r *OrderRepository) ReleaseOrder(ctx context.Context, orderID uuid.UUID) (
 		)
 		select
 			(select status from locked_order) is not null as is_found,
+			(
+				select coalesce(
+					(select expires_at from locked_order) >= now(),
+					false
+				)
+			) as is_expired,
 			(select status from locked_order) as initial_status,
 			(select status from updated_order) is not null as is_updated
 	`
 
-	var found bool
-	var initialStatus *order.Status
-	var updated bool
+	result := order.OrderUpdateResult{}
 
-	err := r.pool.QueryRow(ctx, sql, orderID).Scan(&found, &initialStatus, &updated)
+	err := r.pool.QueryRow(ctx, sql, orderID).Scan(&result.Found, &result.Expired, &result.InitialStatus, &result.Updated)
 
-	return initialStatus, updated, found, err
+	return result, err
 
 }

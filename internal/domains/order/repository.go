@@ -5,6 +5,13 @@ import (
 	"uuid"
 )
 
+type OrderUpdateResult struct {
+	InitialStatus *Status
+	Expired       bool
+	Updated       bool
+	Found         bool
+}
+
 type Repository interface {
 	CreateOrder(ctx context.Context, order *Order) error
 	CreateAndReserveOrderItems(ctx context.Context, orderID uuid.UUID, items []Item) error
@@ -15,5 +22,5 @@ type Repository interface {
 	//  1. updated - is the status changed (false if found is false or err is not nil);
 	//  1. found - is the order found;
 	//  1. err - driver error.
-	ReleaseOrder(ctx context.Context, orderID uuid.UUID) (initialStatus *Status, updated bool, found bool, err error)
+	ReleaseOrder(ctx context.Context, orderID uuid.UUID) (result OrderUpdateResult, err error)
 }
