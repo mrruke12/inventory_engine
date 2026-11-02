@@ -29,6 +29,10 @@ func (s *Service) ReleaseOrder(ctx context.Context, orderID uuid.UUID) (bool, er
 		return false, application.ErrImpossibleCondition
 	}
 
+	if found && *initialStatus == order.StatusPending && !updated {
+		return false, order.ErrOrderExpired
+	}
+
 	switch *initialStatus {
 	case order.StatusPending, order.StatusReleased, order.StatusExpired:
 		return updated, nil // updated if the order is pending or no-op if the order is already released

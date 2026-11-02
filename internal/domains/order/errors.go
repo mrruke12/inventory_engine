@@ -7,4 +7,5 @@ var (
 	ErrOrderNotFound  error = errors.New("order is not found")
 	ErrOrderCanceled  error = errors.New("order is canceled")
 	ErrOrderCompleted error = errors.New("order is completed")
+	ErrOrderExpired   error = errors.New("order is expired")
 )
