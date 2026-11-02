@@ -23,4 +23,5 @@ type Repository interface {
 	//  1. found - is the order found;
 	//  1. err - driver error.
 	ReleaseOrder(ctx context.Context, orderID uuid.UUID) (result OrderUpdateResult, err error)
+	CompleteOrder(ctx context.Context, orderID uuid.UUID) (result OrderUpdateResult, err error)
 }

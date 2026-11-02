@@ -202,7 +202,7 @@ func (r *OrderRepository) ReleaseOrder(ctx context.Context, orderID uuid.UUID) (
 			(select status from locked_order) is not null as is_found,
 			(
 				select coalesce(
-					(select expires_at from locked_order) >= now(),
+					(select expires_at from locked_order) <= now(),
 					false
 				)
 			) as is_expired,
@@ -215,5 +215,38 @@ func (r *OrderRepository) ReleaseOrder(ctx context.Context, orderID uuid.UUID) (
 	err := r.pool.QueryRow(ctx, sql, orderID).Scan(&result.Found, &result.Expired, &result.InitialStatus, &result.Updated)
 
 	return result, err
+}
 
+func (r *OrderRepository) CompleteOrder(ctx context.Context, orderID uuid.UUID) (order.OrderUpdateResult, error) {
+	sql := `
+		with locked_order as (
+			select id, status, expires_at
+			from orders where id = $1
+		),
+		updated_order as (
+			update orders o
+			set status = 'completed'
+			from locked_order lo
+			where o.id = lo.id
+				and o.status = 'pending'
+				and o.expires_at > now()
+			returning o.status
+		)
+		select
+			(select status from locked_order) is not null as is_found,
+			(
+				select coalesce(
+					(select expires_at from locked_order) <= now(),
+					false
+				)
+			) as is_expired,
+			(select status from locked_order) as initial_status,
+			(select status from updated_order) is not null as is_updated
+	`
+
+	result := order.OrderUpdateResult{}
+
+	err := r.pool.QueryRow(ctx, sql, orderID).Scan(&result.Found, &result.Expired, &result.InitialStatus, &result.Updated)
+
+	return result, err
 }

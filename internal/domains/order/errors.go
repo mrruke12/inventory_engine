@@ -8,4 +8,5 @@ var (
 	ErrOrderCanceled  error = errors.New("order is canceled")
 	ErrOrderCompleted error = errors.New("order is completed")
 	ErrOrderExpired   error = errors.New("order is expired")
+	ErrOrderReleased  error = errors.New("order is released")
 )
