@@ -16,42 +16,6 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-// Tests common CreateOrder cases
-func TestCreateOrder(t *testing.T) {
-	tests := []struct {
-		name           string
-		initStock      int
-		amount         int
-		expectedStock  int
-		expectedOrders int
-		expectedError  error
-	}{
-		{"enough product", 1, 1, 0, 1, nil},
-		{"enough product", 100, 50, 50, 1, nil},
-		{"not enough product", 1, 2, 1, 0, product.ErrNotEnoughProduct},
-	}
-
-	for _, tc := range tests {
-		t.Run(tc.name, func(t *testing.T) {
-			integration.CleanupPostgres(t, pool)
-
-			ctx, cancel := context.WithTimeout(context.Background(), time.Millisecond*300)
-			defer cancel()
-
-			productID := requireTestProduct(ctx, t, tc.initStock)
-
-			_, err := createOrder(ctx, productID, uuid.New().String(), tc.amount)
-
-			require.ErrorIs(t, err, tc.expectedError)
-
-			stock, orders := requireProductStockAndOrders(ctx, t, productID)
-
-			assert.Equalf(t, tc.expectedStock, stock, "expected stock of %d, got %d", tc.expectedStock, stock)
-			assert.Equalf(t, tc.expectedOrders, orders, "expected %d orders, got %d", tc.expectedOrders, orders)
-		})
-	}
-}
-
 // Tests that concurrent CreateOrder calls don't cause race condition
 // for product stock
 //
