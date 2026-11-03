@@ -25,15 +25,20 @@ func (i *Idempotency) GetOrCreate(ctx context.Context, key *ports.IdempotencyKey
 	`
 
 	var hash []byte
+	var found bool
 
 	cached := &ports.CachedResult{}
 
 	row := i.pool.QueryRow(ctx, sql, key.Key, key.Scope, key.RequestHash[:], key.Result)
 
-	if err := row.Scan(&hash, &cached.Result, &cached.Found); err != nil {
-		return cached, err
+	if err := row.Scan(&hash, &cached.Result, &found); err != nil {
+		return nil, err
 	}
 
-	copy(cached.RequestHash[:], hash)
-	return cached, nil
+	if found {
+		copy(cached.RequestHash[:], hash)
+		return cached, nil
+	}
+
+	return nil, nil
 }

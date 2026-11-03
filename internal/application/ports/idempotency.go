@@ -40,7 +40,6 @@ func NewIdempotencyKey(key, scope string, request any, result any) (*Idempotency
 }
 
 type CachedResult struct {
-	Found       bool
 	RequestHash [32]byte
 	Result      json.RawMessage
 }

@@ -23,14 +23,17 @@ func TestCancelOrder_Concurrent(t *testing.T) {
 
 	orders := 100
 	routines := 10
-	productID := requireTestProduct(ctx, t, 1)
+	productID := requireTestProduct(ctx, t, orders)
 
-	var canceldCount, noopCount atomic.Int32
+	var canceledCount, noopCount atomic.Int32
 
 	for range orders {
 		var wg sync.WaitGroup
 
 		orderID, err := createOrder(ctx, productID, uuid.New().String(), 1)
+		require.NoError(t, err)
+
+		_, err = pool.Exec(ctx, `update orders set status = 'completed' where id = $1`, orderID)
 		require.NoError(t, err)
 
 		for range routines {
@@ -47,7 +50,7 @@ func TestCancelOrder_Concurrent(t *testing.T) {
 				}
 
 				if updated {
-					canceldCount.Add(1)
+					canceledCount.Add(1)
 				} else {
 					noopCount.Add(1)
 				}
@@ -60,8 +63,8 @@ func TestCancelOrder_Concurrent(t *testing.T) {
 	}
 
 	stock, _ := requireProductStockAndOrders(ctx, t, productID)
-	assert.Equal(t, 1, stock, "stock mismatch: double-cancel happened")
+	assert.Equal(t, orders, stock, "stock mismatch: double-cancel happened")
 
-	assert.Equal(t, int32(orders), canceldCount.Load(), "canceld count")
+	assert.Equal(t, int32(orders), canceledCount.Load(), "canceled count")
 	assert.Equal(t, int32(orders*(routines-1)), noopCount.Load(), "no-op count")
 }

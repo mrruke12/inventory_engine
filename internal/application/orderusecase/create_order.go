@@ -20,6 +20,10 @@ func (s *Service) CreateOrder(ctx context.Context, cmd CreateOrderCommand) (uuid
 	o := order.NewOrder()
 	items := order.ItemsFromOrderItems(o.ID, cmd.OrderItems)
 
+	if len(items) == 0 {
+		return result, order.ErrOrderEmpty
+	}
+
 	err := s.uow.Do(ctx, func(ctx context.Context, rp ports.RepositoryProvider) error {
 		idempKey, err := ports.NewIdempotencyKey(cmd.IdempotencyKey, "create_order", cmd, o.ID)
 
@@ -33,7 +37,7 @@ func (s *Service) CreateOrder(ctx context.Context, cmd CreateOrderCommand) (uuid
 			return err
 		}
 
-		if cached.Found {
+		if cached != nil {
 			if cached.RequestHash != idempKey.RequestHash {
 				return application.ErrIdempotencyKeyReused
 			}

@@ -5,6 +5,7 @@ import "errors"
 var (
 	ErrOrderExists   error = errors.New("order already exists")
 	ErrOrderNotFound error = errors.New("order is not found")
+	ErrOrderEmpty    error = errors.New("order is empty")
 
 	ErrOrderPending   error = errors.New("order is pending")
 	ErrOrderExpired   error = errors.New("order is expired")
