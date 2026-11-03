@@ -5,19 +5,6 @@ import (
 	"uuid"
 )
 
-type PendingOrderUpdateResult struct {
-	InitialStatus *Status
-	Expired       bool
-	Updated       bool
-	Found         bool
-}
-
-type CancelOrderResult struct {
-	InitialStatus *Status
-	Updated       bool
-	Found         bool
-}
-
 type Repository interface {
 	CreateOrder(ctx context.Context, order *Order) error
 	CreateAndReserveOrderItems(ctx context.Context, orderID uuid.UUID, items []Item) error

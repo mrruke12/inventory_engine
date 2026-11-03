@@ -16,7 +16,12 @@ func (s *Service) ReleaseOrder(ctx context.Context, orderID uuid.UUID) (bool, er
 		var err error
 		repo := rp.OrderRepository()
 		result, err = repo.ReleaseOrder(ctx, orderID)
-		return err
+
+		if err != nil {
+			return err
+		}
+
+		return result.Validate()
 	})
 
 	if err != nil {
@@ -27,22 +32,20 @@ func (s *Service) ReleaseOrder(ctx context.Context, orderID uuid.UUID) (bool, er
 		return false, order.ErrOrderNotFound // no-op with error
 	}
 
-	if err := requireInitialStatus(result.InitialStatus); err != nil {
-		return false, err
-	}
-
-	if result.Expired {
-		return false, order.ErrOrderExpired
-	}
-
-	if *result.InitialStatus == order.StatusPending && !result.Updated {
-		return false, application.ErrMustUpdate
-	}
-
 	status := *result.InitialStatus
 
+	if status == order.StatusPending {
+		if result.Expired {
+			return false, order.ErrOrderExpired
+		}
+
+		if !result.Updated {
+			return false, application.ErrMustUpdate
+		}
+	}
+
 	switch status {
-	case order.StatusPending, order.StatusReleased, order.StatusExpired:
+	case order.StatusPending, order.StatusReleased:
 		return result.Updated, nil // updated if the order is pending or no-op if the order is already released
 	default:
 		return result.Updated, order.ErrOrderByStatus(status)

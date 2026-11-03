@@ -16,7 +16,20 @@ func (s *Service) CompleteOrder(ctx context.Context, orderID uuid.UUID) (bool, e
 		var err error
 		repo := rp.OrderRepository()
 		result, err = repo.CompleteOrder(ctx, orderID)
-		return err
+
+		if err != nil {
+			return err
+		}
+
+		if err = result.Validate(); err != nil {
+			return err
+		}
+
+		if result.Found && *result.InitialStatus == order.StatusPending && result.Updated && result.Expired {
+			return application.ErrMustNotUpdate
+		}
+
+		return nil
 	})
 
 	if err != nil {
@@ -27,19 +40,17 @@ func (s *Service) CompleteOrder(ctx context.Context, orderID uuid.UUID) (bool, e
 		return false, order.ErrOrderNotFound
 	}
 
-	if err := requireInitialStatus(result.InitialStatus); err != nil {
-		return false, err
-	}
-
-	if result.Expired {
-		return false, order.ErrOrderExpired
-	}
-
-	if *result.InitialStatus == order.StatusPending && !result.Updated {
-		return false, application.ErrMustUpdate
-	}
-
 	status := *result.InitialStatus
+
+	if status == order.StatusPending {
+		if !result.Expired && !result.Updated {
+			return false, application.ErrMustUpdate
+		}
+
+		if result.Expired {
+			return false, order.ErrOrderExpired
+		}
+	}
 
 	switch *result.InitialStatus {
 	case order.StatusPending, order.StatusCompleted:

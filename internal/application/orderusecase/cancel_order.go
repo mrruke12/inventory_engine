@@ -4,6 +4,7 @@ import (
 	"context"
 	"uuid"
 
+	"github.com/mrruke12/inventory_engine/internal/application"
 	"github.com/mrruke12/inventory_engine/internal/application/ports"
 	"github.com/mrruke12/inventory_engine/internal/domains/order"
 )
@@ -15,7 +16,12 @@ func (s *Service) CancelOrder(ctx context.Context, orderID uuid.UUID) (bool, err
 		repo := rp.OrderRepository()
 		var err error
 		result, err = repo.CancelOrder(ctx, orderID)
-		return err
+
+		if err != nil {
+			return err
+		}
+
+		return result.Validate()
 	})
 
 	if err != nil {
@@ -26,11 +32,11 @@ func (s *Service) CancelOrder(ctx context.Context, orderID uuid.UUID) (bool, err
 		return false, order.ErrOrderNotFound
 	}
 
-	if err := requireInitialStatus(result.InitialStatus); err != nil {
-		return false, err
-	}
-
 	status := *result.InitialStatus
+
+	if status == order.StatusCompleted && !result.Updated {
+		return false, application.ErrMustUpdate
+	}
 
 	switch status {
 	case order.StatusCompleted, order.StatusCanceled:
