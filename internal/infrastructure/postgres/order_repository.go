@@ -3,7 +3,6 @@ package postgres
 import (
 	"context"
 	"errors"
-	"fmt"
 	"uuid"
 
 	"github.com/mrruke12/inventory_engine/internal/domains/order"
@@ -295,20 +294,6 @@ func (r *OrderRepository) CancelOrder(ctx context.Context, orderID uuid.UUID) (o
 	result := order.CancelOrderResult{}
 
 	err := r.pool.QueryRow(ctx, sql, orderID).Scan(&result.Found, &result.InitialStatus, &result.Updated)
-
-	if err == nil && result.InitialStatus != nil {
-		if *result.InitialStatus == order.StatusCompleted && !result.Updated {
-			row := r.pool.QueryRow(ctx, `
-				select status from orders where id = $1
-			`, orderID)
-
-			var status string
-
-			if err := row.Scan(&status); err == nil {
-				fmt.Println(status, result)
-			}
-		}
-	}
 
 	return result, err
 }
