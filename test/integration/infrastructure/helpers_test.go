@@ -28,7 +28,6 @@ func insertOrder(t *testing.T, pool interface {
 	require.NoError(t, err)
 }
 
-// helper: создаёт продукт с заданным stock и возвращает его id.
 func insertProduct(t *testing.T, pool *pgxpool.Pool, name string, stock int) uuid.UUID {
 	t.Helper()
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)

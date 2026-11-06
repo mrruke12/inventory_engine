@@ -75,7 +75,6 @@ func TestCompleteOrder_PendingExpired_DoesNotUpdate(t *testing.T) {
 	require.NotNil(t, res.InitialStatus)
 	assert.Equal(t, order.StatusPending, *res.InitialStatus)
 
-	// Статус должен остаться pending.
 	var status string
 	err = pool.QueryRow(ctx, `select status from orders where id = $1`, id).Scan(&status)
 	require.NoError(t, err)
@@ -162,8 +161,6 @@ func TestCompleteOrder_CanceledStatus_DoesNotUpdate(t *testing.T) {
 	assert.Equal(t, order.StatusCanceled, *res.InitialStatus)
 }
 
-// Проверяем, что повторный вызов CompleteOrder идемпотентен:
-// первый — обновляет, второй — нет (статус уже completed).
 func TestCompleteOrder_Idempotent(t *testing.T) {
 	test.CleanupPostgres(t, pool)
 	repo := postgres.NewOrderRepository(pool)
