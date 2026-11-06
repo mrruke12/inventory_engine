@@ -11,7 +11,7 @@ import (
 
 	"github.com/mrruke12/inventory_engine/internal/application"
 	"github.com/mrruke12/inventory_engine/internal/domains/product"
-	"github.com/mrruke12/inventory_engine/test/integration"
+	"github.com/mrruke12/inventory_engine/test"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -21,7 +21,7 @@ import (
 //
 // Note: acquires min(10, pool.Config().MaxConns) pool connections
 func TestCreateOrder_Concurrent(t *testing.T) {
-	integration.CleanupPostgres(t, pool)
+	test.CleanupPostgres(t, pool)
 
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second*30)
 	defer cancel()
@@ -60,7 +60,7 @@ func TestCreateOrder_Concurrent(t *testing.T) {
 // Tests if CreateOrder calls with the same idempotency key do not
 // create 2 orders, but 1
 func TestCreateOrder_Idempotency(t *testing.T) {
-	integration.CleanupPostgres(t, pool)
+	test.CleanupPostgres(t, pool)
 
 	ctx, cancel := context.WithTimeout(context.Background(), time.Millisecond*300)
 	defer cancel()
@@ -85,7 +85,7 @@ func TestCreateOrder_Idempotency(t *testing.T) {
 // Tests that concurrent CreateOrder calls with the same idempotency key
 // create exactly one order and return the same ID to every caller.
 func TestCreateOrder_IdempotencyConcurrent(t *testing.T) {
-	integration.CleanupPostgres(t, pool)
+	test.CleanupPostgres(t, pool)
 
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second*30)
 	defer cancel()

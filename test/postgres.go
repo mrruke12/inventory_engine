@@ -1,9 +1,13 @@
-package integration
+package test
 
 import (
 	"context"
+	"fmt"
 	"io"
 	"log"
+	"net/url"
+	"path/filepath"
+	"runtime"
 	"testing"
 	"time"
 
@@ -39,7 +43,16 @@ func SetupPostgres() (*postgres.PostgresContainer, *pgxpool.Pool, error) {
 		return nil, nil, err
 	}
 
-	err = conn.Migrate("file://../../../internal/infrastructure/migrations", connString)
+	_, sourceFile, _, ok := runtime.Caller(0)
+	if !ok {
+		return nil, nil, fmt.Errorf("resolve test helper source path")
+	}
+	migrationsPath, err := filepath.Abs(filepath.Join(filepath.Dir(sourceFile), "..", "internal", "infrastructure", "migrations"))
+	if err != nil {
+		return nil, nil, err
+	}
+	migrationsURL := (&url.URL{Scheme: "file", Path: filepath.ToSlash(migrationsPath)}).String()
+	err = conn.Migrate(migrationsURL, connString)
 
 	if err != nil {
 		return nil, nil, err

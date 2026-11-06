@@ -11,7 +11,7 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/mrruke12/inventory_engine/internal/domains/order"
 	"github.com/mrruke12/inventory_engine/internal/infrastructure/postgres"
-	"github.com/mrruke12/inventory_engine/test/integration"
+	"github.com/mrruke12/inventory_engine/test"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -33,7 +33,7 @@ func setupOrderWithItem(
 }
 
 func TestReleaseOrder_NotFound(t *testing.T) {
-	integration.CleanupPostgres(t, pool)
+	test.CleanupPostgres(t, pool)
 	repo := postgres.NewOrderRepository(pool)
 
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
@@ -49,7 +49,7 @@ func TestReleaseOrder_NotFound(t *testing.T) {
 }
 
 func TestReleaseOrder_PendingNotExpired_UpdatesAndRestocks(t *testing.T) {
-	integration.CleanupPostgres(t, pool)
+	test.CleanupPostgres(t, pool)
 	repo := postgres.NewOrderRepository(pool)
 
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
@@ -81,7 +81,7 @@ func TestReleaseOrder_PendingNotExpired_UpdatesAndRestocks(t *testing.T) {
 }
 
 func TestReleaseOrder_MultipleItems_RestocksSum(t *testing.T) {
-	integration.CleanupPostgres(t, pool)
+	test.CleanupPostgres(t, pool)
 	repo := postgres.NewOrderRepository(pool)
 
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
@@ -111,7 +111,7 @@ func TestReleaseOrder_MultipleItems_RestocksSum(t *testing.T) {
 }
 
 func TestReleaseOrder_PendingExpired_NoEffect(t *testing.T) {
-	integration.CleanupPostgres(t, pool)
+	test.CleanupPostgres(t, pool)
 	repo := postgres.NewOrderRepository(pool)
 
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
@@ -155,7 +155,7 @@ func TestReleaseOrder_NonPendingStatus_NoEffect(t *testing.T) {
 
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
-			integration.CleanupPostgres(t, pool)
+			test.CleanupPostgres(t, pool)
 			repo := postgres.NewOrderRepository(pool)
 
 			ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
@@ -189,7 +189,7 @@ func TestReleaseOrder_NonPendingStatus_NoEffect(t *testing.T) {
 }
 
 func TestReleaseOrder_NonPendingExpired_ExpiredTrue(t *testing.T) {
-	integration.CleanupPostgres(t, pool)
+	test.CleanupPostgres(t, pool)
 	repo := postgres.NewOrderRepository(pool)
 
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
@@ -221,7 +221,7 @@ func TestReleaseOrder_NonPendingExpired_ExpiredTrue(t *testing.T) {
 }
 
 func TestReleaseOrder_Idempotent(t *testing.T) {
-	integration.CleanupPostgres(t, pool)
+	test.CleanupPostgres(t, pool)
 	repo := postgres.NewOrderRepository(pool)
 
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
@@ -256,7 +256,7 @@ func TestReleaseOrder_Idempotent(t *testing.T) {
 }
 
 func TestReleaseOrder_NoItems_ReleasesWithoutRestock(t *testing.T) {
-	integration.CleanupPostgres(t, pool)
+	test.CleanupPostgres(t, pool)
 	repo := postgres.NewOrderRepository(pool)
 
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)

@@ -10,13 +10,13 @@ import (
 
 	"github.com/mrruke12/inventory_engine/internal/domains/order"
 	"github.com/mrruke12/inventory_engine/internal/infrastructure/postgres"
-	"github.com/mrruke12/inventory_engine/test/integration"
+	"github.com/mrruke12/inventory_engine/test"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
 func TestCompleteOrder_NotFound(t *testing.T) {
-	integration.CleanupPostgres(t, pool)
+	test.CleanupPostgres(t, pool)
 	repo := postgres.NewOrderRepository(pool)
 
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
@@ -32,7 +32,7 @@ func TestCompleteOrder_NotFound(t *testing.T) {
 }
 
 func TestCompleteOrder_PendingNotExpired_Updates(t *testing.T) {
-	integration.CleanupPostgres(t, pool)
+	test.CleanupPostgres(t, pool)
 	repo := postgres.NewOrderRepository(pool)
 
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
@@ -57,7 +57,7 @@ func TestCompleteOrder_PendingNotExpired_Updates(t *testing.T) {
 }
 
 func TestCompleteOrder_PendingExpired_DoesNotUpdate(t *testing.T) {
-	integration.CleanupPostgres(t, pool)
+	test.CleanupPostgres(t, pool)
 	repo := postgres.NewOrderRepository(pool)
 
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
@@ -83,7 +83,7 @@ func TestCompleteOrder_PendingExpired_DoesNotUpdate(t *testing.T) {
 }
 
 func TestCompleteOrder_AlreadyCompleted_DoesNotUpdate(t *testing.T) {
-	integration.CleanupPostgres(t, pool)
+	test.CleanupPostgres(t, pool)
 	repo := postgres.NewOrderRepository(pool)
 
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
@@ -103,7 +103,7 @@ func TestCompleteOrder_AlreadyCompleted_DoesNotUpdate(t *testing.T) {
 }
 
 func TestCompleteOrder_ReleasedStatus_DoesNotUpdate(t *testing.T) {
-	integration.CleanupPostgres(t, pool)
+	test.CleanupPostgres(t, pool)
 	repo := postgres.NewOrderRepository(pool)
 
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
@@ -123,7 +123,7 @@ func TestCompleteOrder_ReleasedStatus_DoesNotUpdate(t *testing.T) {
 }
 
 func TestCompleteOrder_ExpiredStatus_DoesNotUpdate(t *testing.T) {
-	integration.CleanupPostgres(t, pool)
+	test.CleanupPostgres(t, pool)
 	repo := postgres.NewOrderRepository(pool)
 
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
@@ -143,7 +143,7 @@ func TestCompleteOrder_ExpiredStatus_DoesNotUpdate(t *testing.T) {
 }
 
 func TestCompleteOrder_CanceledStatus_DoesNotUpdate(t *testing.T) {
-	integration.CleanupPostgres(t, pool)
+	test.CleanupPostgres(t, pool)
 	repo := postgres.NewOrderRepository(pool)
 
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
@@ -165,7 +165,7 @@ func TestCompleteOrder_CanceledStatus_DoesNotUpdate(t *testing.T) {
 // Проверяем, что повторный вызов CompleteOrder идемпотентен:
 // первый — обновляет, второй — нет (статус уже completed).
 func TestCompleteOrder_Idempotent(t *testing.T) {
-	integration.CleanupPostgres(t, pool)
+	test.CleanupPostgres(t, pool)
 	repo := postgres.NewOrderRepository(pool)
 
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)

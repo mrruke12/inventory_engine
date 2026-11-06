@@ -10,13 +10,13 @@ import (
 	"time"
 	"uuid"
 
-	"github.com/mrruke12/inventory_engine/test/integration"
+	"github.com/mrruke12/inventory_engine/test"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
 func TestCancelOrder_Concurrent(t *testing.T) {
-	integration.CleanupPostgres(t, pool)
+	test.CleanupPostgres(t, pool)
 
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second*30)
 	defer cancel()

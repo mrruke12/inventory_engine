@@ -12,7 +12,7 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/mrruke12/inventory_engine/internal/application/orderusecase"
 	"github.com/mrruke12/inventory_engine/internal/infrastructure/postgres"
-	"github.com/mrruke12/inventory_engine/test/integration"
+	"github.com/mrruke12/inventory_engine/test"
 	container "github.com/testcontainers/testcontainers-go/modules/postgres"
 	"go.uber.org/goleak"
 )
@@ -63,7 +63,7 @@ func runTests(m *testing.M) (code int) {
 func setup() error {
 	var err error
 
-	pgContainer, pool, err = integration.SetupPostgres()
+	pgContainer, pool, err = test.SetupPostgres()
 
 	if err != nil {
 		return err

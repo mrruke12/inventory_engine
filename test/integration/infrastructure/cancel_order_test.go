@@ -10,13 +10,13 @@ import (
 
 	"github.com/mrruke12/inventory_engine/internal/domains/order"
 	"github.com/mrruke12/inventory_engine/internal/infrastructure/postgres"
-	"github.com/mrruke12/inventory_engine/test/integration"
+	"github.com/mrruke12/inventory_engine/test"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
 func TestCancelOrder_NotFound(t *testing.T) {
-	integration.CleanupPostgres(t, pool)
+	test.CleanupPostgres(t, pool)
 	repo := postgres.NewOrderRepository(pool)
 
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
@@ -31,7 +31,7 @@ func TestCancelOrder_NotFound(t *testing.T) {
 }
 
 func TestCancelOrder_Completed_UpdatesAndRestocks(t *testing.T) {
-	integration.CleanupPostgres(t, pool)
+	test.CleanupPostgres(t, pool)
 	repo := postgres.NewOrderRepository(pool)
 
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
@@ -62,7 +62,7 @@ func TestCancelOrder_Completed_UpdatesAndRestocks(t *testing.T) {
 }
 
 func TestCancelOrder_MultipleItems_RestocksSum(t *testing.T) {
-	integration.CleanupPostgres(t, pool)
+	test.CleanupPostgres(t, pool)
 	repo := postgres.NewOrderRepository(pool)
 
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
@@ -103,7 +103,7 @@ func TestCancelOrder_NonCompletedStatus_NoEffect(t *testing.T) {
 
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
-			integration.CleanupPostgres(t, pool)
+			test.CleanupPostgres(t, pool)
 			repo := postgres.NewOrderRepository(pool)
 
 			ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
@@ -136,7 +136,7 @@ func TestCancelOrder_NonCompletedStatus_NoEffect(t *testing.T) {
 }
 
 func TestCancelOrder_NonCompletedExpired_NoEffect(t *testing.T) {
-	integration.CleanupPostgres(t, pool)
+	test.CleanupPostgres(t, pool)
 	repo := postgres.NewOrderRepository(pool)
 
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
@@ -167,7 +167,7 @@ func TestCancelOrder_NonCompletedExpired_NoEffect(t *testing.T) {
 }
 
 func TestCancelOrder_Idempotent(t *testing.T) {
-	integration.CleanupPostgres(t, pool)
+	test.CleanupPostgres(t, pool)
 	repo := postgres.NewOrderRepository(pool)
 
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
@@ -202,7 +202,7 @@ func TestCancelOrder_Idempotent(t *testing.T) {
 }
 
 func TestCancelOrder_NoItems_CancelsWithoutRestock(t *testing.T) {
-	integration.CleanupPostgres(t, pool)
+	test.CleanupPostgres(t, pool)
 	repo := postgres.NewOrderRepository(pool)
 
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
@@ -223,7 +223,7 @@ func TestCancelOrder_NoItems_CancelsWithoutRestock(t *testing.T) {
 }
 
 func TestCompleteThenCancel_RestocksOnce(t *testing.T) {
-	integration.CleanupPostgres(t, pool)
+	test.CleanupPostgres(t, pool)
 	repo := postgres.NewOrderRepository(pool)
 
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)

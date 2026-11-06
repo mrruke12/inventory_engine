@@ -10,13 +10,13 @@ import (
 
 	"github.com/mrruke12/inventory_engine/internal/domains/order"
 	"github.com/mrruke12/inventory_engine/internal/infrastructure/postgres"
-	"github.com/mrruke12/inventory_engine/test/integration"
+	"github.com/mrruke12/inventory_engine/test"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
 func TestBatchMarkExpiredOrders_MarkOnlyExpiredPendingOrders(t *testing.T) {
-	integration.CleanupPostgres(t, pool)
+	test.CleanupPostgres(t, pool)
 
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second*5)
 	defer cancel()
@@ -91,7 +91,7 @@ func TestBatchMarkExpiredOrders_MarkOnlyExpiredPendingOrders(t *testing.T) {
 }
 
 func TestBatchMarkExpiredOrders_MarkAtMostBatchSizeOrders(t *testing.T) {
-	integration.CleanupPostgres(t, pool)
+	test.CleanupPostgres(t, pool)
 
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second*5)
 	defer cancel()
@@ -156,7 +156,7 @@ func TestBatchMarkExpiredOrders_MarkAtMostBatchSizeOrders(t *testing.T) {
 }
 
 func TestBatchMarkExpiredOrders_SkipLockedOrders(t *testing.T) {
-	integration.CleanupPostgres(t, pool)
+	test.CleanupPostgres(t, pool)
 
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second*5)
 	defer cancel()
