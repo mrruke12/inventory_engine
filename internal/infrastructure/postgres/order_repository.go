@@ -3,6 +3,7 @@ package postgres
 import (
 	"context"
 	"errors"
+	"fmt"
 	"uuid"
 
 	"github.com/mrruke12/inventory_engine/internal/domains/order"
@@ -276,23 +277,38 @@ func (r *OrderRepository) CancelOrder(ctx context.Context, orderID uuid.UUID) (o
 			from locked_order l
 			where o.id = l.id
 				and o.status = 'completed'
-			returning o.status
+			returning o.id
 		),
 		updated_products as (
 			update products p
 			set stock = p.stock + lp.amount
 			from locked_products lp
 			where p.id = lp.id
+				and exists (select 1 from updated_order)
 		)
 		select
 			(select status from locked_order) is not null as is_found,
 			(select status from locked_order) as initial_status,
-			(select status from updated_order) is not null as is_updated
+			(select id from updated_order) is not null as is_updated
 	`
 
 	result := order.CancelOrderResult{}
 
 	err := r.pool.QueryRow(ctx, sql, orderID).Scan(&result.Found, &result.InitialStatus, &result.Updated)
+
+	if err == nil && result.InitialStatus != nil {
+		if *result.InitialStatus == order.StatusCompleted && !result.Updated {
+			row := r.pool.QueryRow(ctx, `
+				select status from orders where id = $1
+			`, orderID)
+
+			var status string
+
+			if err := row.Scan(&status); err == nil {
+				fmt.Println(status, result)
+			}
+		}
+	}
 
 	return result, err
 }

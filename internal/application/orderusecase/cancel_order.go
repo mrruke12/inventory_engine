@@ -14,6 +14,7 @@ func (s *Service) CancelOrder(ctx context.Context, orderID uuid.UUID) (bool, err
 
 	err := s.uow.Do(ctx, func(ctx context.Context, rp ports.RepositoryProvider) error {
 		repo := rp.OrderRepository()
+
 		var err error
 		result, err = repo.CancelOrder(ctx, orderID)
 
@@ -21,7 +22,15 @@ func (s *Service) CancelOrder(ctx context.Context, orderID uuid.UUID) (bool, err
 			return err
 		}
 
-		return result.Validate()
+		if err := result.Validate(); err != nil {
+			return err
+		}
+
+		if result.Found && result.InitialStatus != nil &&
+			*result.InitialStatus == order.StatusCompleted && !result.Updated {
+			return application.ErrMustUpdate
+		}
+		return nil
 	})
 
 	if err != nil {
@@ -32,16 +41,10 @@ func (s *Service) CancelOrder(ctx context.Context, orderID uuid.UUID) (bool, err
 		return false, order.ErrOrderNotFound
 	}
 
-	status := *result.InitialStatus
-
-	if status == order.StatusCompleted && !result.Updated {
-		return false, application.ErrMustUpdate
-	}
-
-	switch status {
+	switch *result.InitialStatus {
 	case order.StatusCompleted, order.StatusCanceled:
 		return result.Updated, nil
 	default:
-		return result.Updated, order.ErrOrderByStatus(status)
+		return result.Updated, order.ErrOrderByStatus(*result.InitialStatus)
 	}
 }
